@@ -13,10 +13,19 @@ from PIL import Image
 
 from model import SeeInDark
 
-input_dir = './dataset/Sony/short/'
-gt_dir = './dataset/Sony/long/'
-result_dir = './result_Sony/'
-model_dir = './saved_model/'
+import argparse
+import pytorch_ssim
+
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--loss', type=str, default='l1', help='Training loss = "L1", "L2" or "ssim"')
+args = parser.parse_args()
+
+parent_dir = 'pytorch-Learning-to-See-in-the-Dark/'
+
+input_dir = parent_dir + 'dataset/Sony/short/'
+gt_dir = parent_dir + 'dataset/Sony/long/'
+result_dir = parent_dir + 'result_Sony/'
+model_dir = parent_dir + 'saved_model/'
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(f"Device: {device}")
@@ -33,8 +42,6 @@ test_ids = []
 for i in range(len(test_fns)):
     _, test_fn = os.path.split(test_fns[i])
     test_ids.append(int(test_fn[0:5]))
-
-
 
 ps = 512 #patch size for training
 save_freq = 100
@@ -61,9 +68,16 @@ def pack_raw(raw):
                        im[1:H:2,0:W:2,:]), axis=2)
     return out
 
-def reduce_mean(out_im, gt_im):
+def loss_l1(out_im, gt_im):
     return torch.abs(out_im - gt_im).mean()
 
+def loss_l2(out_im, gt_im):
+    loss = nn.MSELoss() 
+    return loss(out_im, gt_im)
+
+def loss_ssim(out_im, gt_im):
+    ssim_loss = pytorch_ssim.SSIM(window_size=11)
+    return ssim_loss(out_im, gt_im) 
 
 #Raw data takes long time to load. Keep them in memory after loaded.
 gt_images=[None]*6000
@@ -73,8 +87,6 @@ input_images['250'] = [None]*len(train_ids)
 input_images['100'] = [None]*len(train_ids)
 
 g_loss = np.zeros((5000,1))
-
-
 
 allfolders = glob.glob('./result/*0')
 lastepoch = 0
@@ -149,8 +161,13 @@ for epoch in range(lastepoch,4001):
 
         model.zero_grad()
         out_img = model(in_img)
-
-        loss = reduce_mean(out_img, gt_img)
+        
+        if args.loss = "L1":
+            loss = reduce_mean(out_img, gt_img)
+        elif args.loss == "L2":
+            loss = loss_l2(out_img, gt_img)
+        elif args.loss = "ssim":
+            loss = loss_ssim(out_img, gt_img)
         loss.backward()
 
         opt.step()
