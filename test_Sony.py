@@ -13,16 +13,6 @@ from PIL import Image
 
 from model import SeeInDark
 
-parent_dir = 'pytorch-Learning-to-See-in-the-Dark/'
-
-input_dir = parent_dir + 'dataset/Sony/short/'
-gt_dir = parent_dir + 'dataset/Sony/long/'
-m_path = parent_dir + 'saved_model/'
-m_name = 'checkpoint_sony_e4000.pth'
-result_dir = parent_dir + 'test_result_Sony/'
-
-device = torch.device('cuda')
-
 def pack_raw(raw):
     #pack Bayer image to 4 channels
     im = np.maximum(raw - 512,0)/ (16383 - 512) #subtract the black level
@@ -37,12 +27,6 @@ def pack_raw(raw):
                        im[1:H:2,1:W:2,:],
                        im[1:H:2,0:W:2,:]), axis=2)
     return out
-
-model = SeeInDark()
-model.load_state_dict(torch.load( m_path + m_name ,map_location={'cuda:1':'cuda:0'}))
-model = model.to(device)
-if not os.path.isdir(result_dir):
-    os.makedirs(result_dir)
 
 def process_file(tuple_):
     file_, k = tuple_
@@ -59,9 +43,6 @@ def process_file(tuple_):
     im = raw.raw_image_visible.astype(np.float32) 
     input_full = np.expand_dims(pack_raw(im),axis=0) *ratio
 
-    im = raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
-    scale_full = np.expand_dims(np.float32(im/65535.0),axis = 0)	
-
     gt_raw = rawpy.imread(gt_path)
     im = gt_raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
     gt_full = np.expand_dims(np.float32(im/65535.0),axis = 0)
@@ -76,27 +57,30 @@ def process_file(tuple_):
 
     output = output[0,:,:,:]
     gt_full = gt_full[0,:,:,:]
-    scale_full = scale_full[0,:,:,:]
     origin_full = scale_full
-    scale_full = scale_full*np.mean(gt_full)/np.mean(scale_full) # scale the low-light image to the same mean of the groundtruth
-    
+
     Image.fromarray((origin_full*255).astype('uint8')).save(result_dir + file_used + '_ori.png')
     Image.fromarray((output*255).astype('uint8')).save(result_dir + file_used + '_out.png')
-    Image.fromarray((scale_full*255).astype('uint8')).save(result_dir + file_used + '_scale.png')
     Image.fromarray((gt_full*255).astype('uint8')).save(result_dir + file_used + '_gt.png')
 
-import glob
-import multiprocessing as mp
+if __name__ == "__main__":
+    parent_dir = 'pytorch-Learning-to-See-in-the-Dark/'
 
-L = glob.glob(input_dir + '*')
-lenL = len(L)
+    input_dir = parent_dir + 'dataset/Sony/short/'
+    gt_dir = parent_dir + 'dataset/Sony/long/'
+    m_path = parent_dir + 'saved_model/'
+    m_name = 'checkpoint_sony_e4000.pth'
+    result_dir = parent_dir + 'test_result_Sony/'
 
-for i in range(lenL):
-    process_file((L[i], i+1))
+    device = torch.device('cuda')
+    model = SeeInDark()
+    model.load_state_dict(torch.load( m_path + m_name ,map_location={'cuda:1':'cuda:0'}))
+    model = model.to(device)
 
-"""nb_cores = 20
-pool = mp.Pool(nb_cores)
-# all the files
-pool.map(process_file, ((file_, i) for i, file_ in enumerate(L)))
-pool.close()
-pool.join()"""
+    if not os.path.isdir(result_dir):
+        os.makedirs(result_dir)
+    L = glob.glob(input_dir + '*')
+    lenL = len(L)
+
+    for i in range(lenL):
+        process_file((L[i], i+1))
