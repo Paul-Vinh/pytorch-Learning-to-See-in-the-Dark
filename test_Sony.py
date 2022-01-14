@@ -15,6 +15,13 @@ from skimage.metrics import structural_similarity as ssim
 
 from model import SeeInDark
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--file", default=None,
+    type=str, help="Test on a particular file")
+args = parser.parse_args()
+
 parent_dir = 'pytorch-Learning-to-See-in-the-Dark/'
 
 input_dir = parent_dir + 'dataset/Sony/short/'
@@ -46,7 +53,7 @@ def compute_ssim(gt_im, pred_im):
 
 def process_file(tuple_, d: dict):
     file_, k = tuple_
-    print("File {}/{}".format(k+1, lenL))
+    print("File {}/{}".format(k, lenL))
     file_used = file_.split('/')[-1]
     print(file_used)
     #gt_file =  + '_00_10s.ARW'
@@ -97,13 +104,17 @@ if __name__ == "__main__":
 
     if not os.path.isdir(result_dir):
         os.makedirs(result_dir)
-    L = glob.glob(input_dir + '*')
+
+    if not args.file:
+        # test on the whole dataset
+        L = glob.glob(input_dir + '*')
+    else:
+        L = [input_dir + args.file]
     lenL = len(L)
 
     d = {"id": [], "ground truth": [], "predicted image": [], "ssim": []}
     for i in range(lenL):
         process_file((L[i], i+1), d)
-
-    # dataframe with ssim accuracy from dict
-    df = pd.DataFrame.from_dict(d, columns=['id', 'ground truth', 'predicted_image', 'ssim'])
-    df.to_csv('test_results.csv')
+        # dataframe with ssim accuracy from dict
+        df = pd.DataFrame.from_dict(d)
+        df.to_csv('test_results.csv')
