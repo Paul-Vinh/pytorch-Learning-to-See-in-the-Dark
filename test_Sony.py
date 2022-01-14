@@ -2,6 +2,7 @@ import os
 import time
 
 import numpy as np
+import pandas as pd
 import rawpy
 import glob
 
@@ -10,6 +11,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from PIL import Image
+from skimage.metrics import structural_similarity as ssim
 
 from model import SeeInDark
 
@@ -17,18 +19,24 @@ def pack_raw(raw):
     #pack Bayer image to 4 channels
     im = np.maximum(raw - 512,0)/ (16383 - 512) #subtract the black level
 
-    im = np.expand_dims(im,axis=2) 
+    im = np.expand_dims(im,axis=2)
     img_shape = im.shape
     H = img_shape[0]
     W = img_shape[1]
 
-    out = np.concatenate((im[0:H:2,0:W:2,:], 
+    out = np.concatenate((im[0:H:2,0:W:2,:],
                        im[0:H:2,1:W:2,:],
                        im[1:H:2,1:W:2,:],
                        im[1:H:2,0:W:2,:]), axis=2)
     return out
 
-def process_file(tuple_):
+def compute_ssim(gt_im, pred_im):
+    """ Compute SSIM between ground truth image & predicted image.
+    """
+    return(ssim_noise = ssim(gt_im, pred_im,
+                  data_range=pred_im.max() - pred_im.min()))
+
+def process_file(tuple_, d: dict):
     file_, k = tuple_
     print("File {}/{}".format(k+1, lenL))
     file_used = file_.split('/')[-1]
@@ -40,7 +48,7 @@ def process_file(tuple_):
     ratio = min(float(gt_exposure) / float(in_exposure), 300)
 
     raw = rawpy.imread(file_)
-    im = raw.raw_image_visible.astype(np.float32) 
+    im = raw.raw_image_visible.astype(np.float32)
     input_full = np.expand_dims(pack_raw(im),axis=0) *ratio
 
     gt_raw = rawpy.imread(gt_path)
@@ -58,6 +66,11 @@ def process_file(tuple_):
     output = output[0,:,:,:]
     gt_full = gt_full[0,:,:,:]
     origin_full = scale_full
+
+    d['id'].append(k)
+    d['ground truth'].append(gt_file)
+    d['predicted image'].append(file_used + '_out.png')
+    d['ssim'].append(compute_ssim(gt_full*255, output*255))
 
     Image.fromarray((origin_full*255).astype('uint8')).save(result_dir + file_used + '_ori.png')
     Image.fromarray((output*255).astype('uint8')).save(result_dir + file_used + '_out.png')
@@ -82,5 +95,10 @@ if __name__ == "__main__":
     L = glob.glob(input_dir + '*')
     lenL = len(L)
 
+    d = {"id": [], "ground truth": [], "predicted image": [], "ssim": []}
     for i in range(lenL):
-        process_file((L[i], i+1))
+        process_file((L[i], i+1), d)
+
+    # dataframe with ssim accuracy from dict
+    df = pd.DataFrame.from_dict(d, columns=['id', 'ground truth', 'predicted_image', 'ssim'])
+    df.to_csv('test_results.csv')
