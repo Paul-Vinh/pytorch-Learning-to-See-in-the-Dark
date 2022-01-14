@@ -2,6 +2,7 @@ import os
 import time
 
 import numpy as np
+import matplotlib.pyplot as plt
 import rawpy
 import glob
 
@@ -19,10 +20,13 @@ import pytorch_ssim
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--loss', type=str, default='L1', help='Training loss = "L1", "L2" or "ssim"')
 parser.add_argument('--epoch', type=int, default=10, help='Number of Epochs')
+parser.add_argument('--plot_loss', type=bool, default=False, help='Want to plot loss or not')
+
 args = parser.parse_args()
 
 type_loss = args.loss
 num_epochs = args.epoch
+plot_loss = args.plot_loss
 
 parent_dir = 'pytorch-Learning-to-See-in-the-Dark/'
 
@@ -101,9 +105,14 @@ learning_rate = 1e-4
 model = SeeInDark().to(device)
 model._initialize_weights()
 opt = optim.Adam(model.parameters(), lr = learning_rate)
+
+# Print Evolution of metrics
+train_loss = []
+val_loss = []
+
 for epoch in range(lastepoch,num_epochs+1):
     if os.path.isdir("result/%04d"%epoch):
-        continue    
+        continue
     cnt=0
     if epoch > 2000:
         for g in opt.param_groups:
@@ -167,7 +176,7 @@ for epoch in range(lastepoch,num_epochs+1):
         out_img = model(in_img)
         
         if type_loss == "L1":
-            loss = reduce_mean(out_img, gt_img)
+            loss = loss_L1(out_img, gt_img)
         elif type_loss == "L2":
             loss = loss_l2(out_img, gt_img)
         elif type_loss == "ssim":
@@ -179,6 +188,7 @@ for epoch in range(lastepoch,num_epochs+1):
 
         mean_loss = np.mean(g_loss[np.where(g_loss)])
         print(f"Epoch: {epoch} \t Count: {cnt} \t Loss={mean_loss:.3} \t Time={time.time()-st:.3}")
+        train_loss.append(mean_loss)
 
         if epoch%save_freq==0:
             epoch_result_dir = result_dir + f'{epoch:04}/'
@@ -193,3 +203,8 @@ for epoch in range(lastepoch,num_epochs+1):
             Image.fromarray((temp*255).astype('uint8')).save(epoch_result_dir + f'{train_id:05}_00_train_{ratio}.jpg')
             torch.save(model.state_dict(), model_dir+'checkpoint_sony_e%04d.pth'%epoch)
 
+if plot_loss:
+    plt.plot(range(len(train_loss)), train_loss)
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss ' + loss)
+    plt.savefig(model_dir+'e%04d.png'%epoch)   
