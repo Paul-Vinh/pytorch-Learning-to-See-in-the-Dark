@@ -49,13 +49,14 @@ device = torch.device('cuda')
 print(f"Device: {device}")
 
 #get train and test IDs
-train_fns = glob.glob(gt_dir + '0*.ARW')
+train_fns = glob.glob(gt_dir + '0*.png')
+print(len(train_fns))
 train_ids = []
 for i in range(len(train_fns)):
     _, train_fn = os.path.split(train_fns[i])
     train_ids.append(int(train_fn[0:5]))
 
-test_fns = glob.glob(gt_dir + '/1*.ARW')
+test_fns = glob.glob(gt_dir + '/1*.png')
 test_ids = []
 for i in range(len(test_fns)):
     _, test_fn = os.path.split(test_fns[i])
@@ -121,8 +122,8 @@ train_loss = []
 val_loss = []
 
 for epoch in range(lastepoch,num_epochs+1):
-    if os.path.isdir("result/%04d"%epoch):
-        continue
+    #if os.path.isdir("result/%04d"%epoch):
+    #    continue
     cnt=0
     if epoch > 2000:
         for g in opt.param_groups:
@@ -136,7 +137,7 @@ for epoch in range(lastepoch,num_epochs+1):
         in_path = in_files[np.random.randint(0,len(in_files))]
         _, in_fn = os.path.split(in_path)
 
-        gt_files = glob.glob(gt_dir + '%05d_00*.ARW'%train_id)
+        gt_files = glob.glob(gt_dir + '%05d_00*.png'%train_id)
         gt_path = gt_files[0]
         _, gt_fn = os.path.split(gt_path)
         in_exposure =  float(in_fn[9:-5])
@@ -146,14 +147,15 @@ for epoch in range(lastepoch,num_epochs+1):
         st=time.time()
         cnt+=1
 
-        if input_images[str(ratio)[0:3]][ind] is None:
-            raw = rawpy.imread(in_path)
-            input_images[str(ratio)[0:3]][ind] = np.expand_dims(pack_raw(raw),axis=0) *ratio
+        # if input_images[str(ratio)[0:3]][ind] is None:
+        #     raw = rawpy.imread(in_path)
+        #     input_images[str(ratio)[0:3]][ind] = np.expand_dims(pack_raw(raw),axis=0) *ratio
 
-            gt_raw = rawpy.imread(gt_path)
-            im = gt_raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
-            gt_images[ind] = np.expand_dims(np.float32(im/65535.0),axis = 0)
-
+        #     gt_raw = rawpy.imread(gt_path)
+        #     im = gt_raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
+        #     gt_images[ind] = np.expand_dims(np.float32(im/65535.0),axis = 0)
+        im = Image.open(in_path)
+        gt_images[ind] = np.array(im)
          
         #crop
         H = input_images[str(ratio)[0:3]][ind].shape[1]
