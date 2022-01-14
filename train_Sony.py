@@ -19,6 +19,7 @@ import pytorch_ssim
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--parent_dir', type=str, default='', help='Path to dataset')
+parser.add_argument('--gt_dir', type=str, default='', help='Path to gt')
 parser.add_argument('--loss', type=str, default='L1', help='Training loss = "L1", "L2" or "ssim"')
 parser.add_argument('--epoch', type=int, default=10, help='Number of Epochs')
 parser.add_argument('--plot_loss', type=bool, default=False, help='Want to plot loss or not')
@@ -29,9 +30,10 @@ type_loss = args.loss
 num_epochs = args.epoch
 plot_loss = args.plot_loss
 parent_dir = args.parent_dir
+gt_dir = args.gt_dir
 
 input_dir = parent_dir + 'dataset/Sony/short/'
-gt_dir = parent_dir + 'dataset/Sony/long/'
+#gt_dir = parent_dir + 'dataset/Sony/long/'
 result_dir = parent_dir + 'result_Sony/'
 model_dir = parent_dir + 'saved_model/'
 
