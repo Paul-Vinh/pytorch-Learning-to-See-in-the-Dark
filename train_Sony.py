@@ -31,7 +31,7 @@ gt_dir = parent_dir + 'dataset/Sony/long/'
 result_dir = parent_dir + 'result_Sony/'
 model_dir = parent_dir + 'saved_model/'
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda')
 print(f"Device: {device}")
 
 #get train and test IDs
