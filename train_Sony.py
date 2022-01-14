@@ -17,8 +17,12 @@ import argparse
 import pytorch_ssim
 
 parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('--loss', type=str, default='l1', help='Training loss = "L1", "L2" or "ssim"')
+parser.add_argument('--loss', type=str, default='L1', help='Training loss = "L1", "L2" or "ssim"')
+parser.add_argument('--epoch', type=int, default=10, help='Number of Epochs')
 args = parser.parse_args()
+
+type_loss = args.loss
+num_epochs = args.epoch
 
 parent_dir = 'pytorch-Learning-to-See-in-the-Dark/'
 
@@ -97,7 +101,7 @@ learning_rate = 1e-4
 model = SeeInDark().to(device)
 model._initialize_weights()
 opt = optim.Adam(model.parameters(), lr = learning_rate)
-for epoch in range(lastepoch,4001):
+for epoch in range(lastepoch,num_epochs+1):
     if os.path.isdir("result/%04d"%epoch):
         continue    
     cnt=0
@@ -162,11 +166,11 @@ for epoch in range(lastepoch,4001):
         model.zero_grad()
         out_img = model(in_img)
         
-        if args.loss = "L1":
+        if type_loss == "L1":
             loss = reduce_mean(out_img, gt_img)
-        elif args.loss == "L2":
+        elif type_loss == "L2":
             loss = loss_l2(out_img, gt_img)
-        elif args.loss = "ssim":
+        elif type_loss == "ssim":
             loss = loss_ssim(out_img, gt_img)
         loss.backward()
 
