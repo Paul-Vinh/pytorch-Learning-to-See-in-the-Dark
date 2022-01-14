@@ -15,6 +15,14 @@ from skimage.metrics import structural_similarity as ssim
 
 from model import SeeInDark
 
+parent_dir = 'pytorch-Learning-to-See-in-the-Dark/'
+
+input_dir = parent_dir + 'dataset/Sony/short/'
+gt_dir = parent_dir + 'dataset/Sony/long/'
+m_path = parent_dir + 'saved_model/'
+m_name = 'checkpoint_sony_e4000.pth'
+result_dir = parent_dir + 'test_result_Sony/'
+
 def pack_raw(raw):
     #pack Bayer image to 4 channels
     im = np.maximum(raw - 512,0)/ (16383 - 512) #subtract the black level
@@ -33,16 +41,17 @@ def pack_raw(raw):
 def compute_ssim(gt_im, pred_im):
     """ Compute SSIM between ground truth image & predicted image.
     """
-    return(ssim_noise = ssim(gt_im, pred_im,
-                  data_range=pred_im.max() - pred_im.min()))
+    return(ssim(gt_im, pred_im,
+                  data_range=pred_im.max() - pred_im.min(), multichannel=True))
 
 def process_file(tuple_, d: dict):
     file_, k = tuple_
     print("File {}/{}".format(k+1, lenL))
     file_used = file_.split('/')[-1]
-    gt_file = file_used.split('_')[0] + '_00_10s.ARW'
-    print(gt_file)
-    gt_path = glob.glob(gt_dir + gt_file)[0]
+    print(file_used)
+    #gt_file =  + '_00_10s.ARW'
+    gt_path = glob.glob(gt_dir + file_used.split('_')[0] + "*")[0]
+    gt_file = gt_path.split('/')[-1]
     in_exposure = file_used[9:-5] # float(in_fn[9:-5])
     gt_exposure = gt_file[9:-5] # float(gt_fn[9:-5])
     ratio = min(float(gt_exposure) / float(in_exposure), 300)
@@ -50,6 +59,9 @@ def process_file(tuple_, d: dict):
     raw = rawpy.imread(file_)
     im = raw.raw_image_visible.astype(np.float32)
     input_full = np.expand_dims(pack_raw(im),axis=0) *ratio
+
+    im = raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
+    scale_full = np.expand_dims(np.float32(im/65535.0),axis = 0)
 
     gt_raw = rawpy.imread(gt_path)
     im = gt_raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
@@ -65,6 +77,7 @@ def process_file(tuple_, d: dict):
 
     output = output[0,:,:,:]
     gt_full = gt_full[0,:,:,:]
+    scale_full = scale_full[0,:,:,:]
     origin_full = scale_full
 
     d['id'].append(k)
@@ -77,14 +90,6 @@ def process_file(tuple_, d: dict):
     Image.fromarray((gt_full*255).astype('uint8')).save(result_dir + file_used + '_gt.png')
 
 if __name__ == "__main__":
-    parent_dir = 'pytorch-Learning-to-See-in-the-Dark/'
-
-    input_dir = parent_dir + 'dataset/Sony/short/'
-    gt_dir = parent_dir + 'dataset/Sony/long/'
-    m_path = parent_dir + 'saved_model/'
-    m_name = 'checkpoint_sony_e4000.pth'
-    result_dir = parent_dir + 'test_result_Sony/'
-
     device = torch.device('cuda')
     model = SeeInDark()
     model.load_state_dict(torch.load( m_path + m_name ,map_location={'cuda:1':'cuda:0'}))
