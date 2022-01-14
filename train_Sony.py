@@ -18,7 +18,7 @@ import argparse
 import pytorch_ssim
 
 parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('--parent_dir', type=str, default='/', help='Path to dataset')
+parser.add_argument('--parent_dir', type=str, default='', help='Path to dataset')
 parser.add_argument('--loss', type=str, default='L1', help='Training loss = "L1", "L2" or "ssim"')
 parser.add_argument('--epoch', type=int, default=10, help='Number of Epochs')
 parser.add_argument('--plot_loss', type=bool, default=False, help='Want to plot loss or not')
@@ -34,6 +34,14 @@ input_dir = parent_dir + 'dataset/Sony/short/'
 gt_dir = parent_dir + 'dataset/Sony/long/'
 result_dir = parent_dir + 'result_Sony/'
 model_dir = parent_dir + 'saved_model/'
+
+if not os.path.isdir(result_dir):
+  os.mkdir(result_dir)
+
+if not os.path.isdir(model_dir):
+  os.mkdir(model_dir)
+
+
 
 device = torch.device('cuda')
 print(f"Device: {device}")
@@ -176,7 +184,7 @@ for epoch in range(lastepoch,num_epochs+1):
         out_img = model(in_img)
         
         if type_loss == "L1":
-            loss = loss_L1(out_img, gt_img)
+            loss = loss_l1(out_img, gt_img)
         elif type_loss == "L2":
             loss = loss_l2(out_img, gt_img)
         elif type_loss == "ssim":
