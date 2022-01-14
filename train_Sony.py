@@ -201,8 +201,8 @@ for epoch in range(lastepoch,num_epochs+1):
 
         mean_loss = np.mean(g_loss[np.where(g_loss)])
         print(f"Epoch: {epoch} \t Count: {cnt} \t Loss={mean_loss:.3} \t Time={time.time()-st:.3}")
+        print(mean_loss)
         train_loss.append(mean_loss)
-
         if epoch%save_freq==0:
             epoch_result_dir = result_dir + f'{epoch:04}/'
 
@@ -211,14 +211,12 @@ for epoch in range(lastepoch,num_epochs+1):
 
             output = out_img.permute(0, 2, 3, 1).cpu().data.numpy()
             output = np.minimum(np.maximum(output,0),1)
-            
-            temp = np.concatenate((gt_patch[0,:,:,:], output[0,:,:,:]),axis=1)
-            Image.fromarray((temp*255).astype('uint8')).save(epoch_result_dir + f'{train_id:05}_00_train_{ratio}.jpg')
             torch.save(model.state_dict(), model_dir+'checkpoint_sony_e%04d.pth'%epoch)
         input_images = {}
         input_images['300'] = [None]*len(train_ids)
         input_images['250'] = [None]*len(train_ids)
         input_images['100'] = [None]*len(train_ids)
+        torch.cuda.empty_cache()
 
 if plot_loss:
     plt.plot(range(len(train_loss)), train_loss)
