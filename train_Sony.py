@@ -96,8 +96,8 @@ def loss_l2(out_im, gt_im):
     return loss(out_im, gt_im)
 
 def loss_ssim(out_im, gt_im):
-    ssim_loss = pytorch_ssim.SSIM(window_size=11)
-    return ssim_loss(out_im, gt_im) 
+    ssim_loss = pytorch_ssim.SSIM()
+    return(1 - ssim_loss(out_im, gt_im))
 
 #Raw data takes long time to load. Keep them in memory after loaded.
 gt_images=[None]*6000
