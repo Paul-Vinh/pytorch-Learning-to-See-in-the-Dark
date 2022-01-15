@@ -16,7 +16,8 @@ from PIL import Image
 from model import SeeInDark
 
 import argparse
-import pytorch_ssim
+from pytorch_msssim import SSIM
+from torchgeometry.losses import ssim
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--parent_dir', type=str, default='', help='Path to dataset')
@@ -95,8 +96,8 @@ def loss_l2(out_im, gt_im):
     return loss(out_im, gt_im)
 
 def loss_ssim(out_im, gt_im):
-    ssim_loss = pytorch_ssim.SSIM()
-    return(1 - ssim_loss(out_im, gt_im))
+    ssim_loss = SSIM(win_size=11, win_sigma=1.5, data_range=1, size_average=True, channel=3)
+    return(1-ssim_loss(out_im, gt_im))
 
 #Raw data takes long time to load. Keep them in memory after loaded.
 gt_images=[None]*6000
@@ -191,6 +192,7 @@ for epoch in range(lastepoch,num_epochs+1):
             loss = loss_l2(out_img, gt_img)
         elif type_loss == "ssim":
             loss = loss_ssim(out_img, gt_img)
+        print(loss)
         loss.backward()
 
         opt.step()
