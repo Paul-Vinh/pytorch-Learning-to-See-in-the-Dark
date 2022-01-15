@@ -26,15 +26,19 @@ args = parser.parse_args()
 
 parent_dir = 'pytorch-Learning-to-See-in-the-Dark/'
 
-input_dir = parent_dir + 'dataset/Sony/short/'
-gt_dir = parent_dir + 'dataset/Sony/long/'
+input_dir = 'dataset/Sony/short/'
+gt_dir = 'dataset/Sony/long/'
 m_path = parent_dir + 'saved_model/'
 m_name = 'checkpoint_sony_e4000.pth'
 result_dir = parent_dir + 'test_result_Sony/'
 
 def pack_raw(raw):
     #pack Bayer image to 4 channels
-    im = np.maximum(raw - 512,0)/ (16383 - 512) #subtract the black level
+    if args.generalization:
+        black_level = 528
+    else:
+        black_level = 512
+    im = np.maximum(raw - black_level, 0)/ (16383 - black_level) # subtract the black level
 
     im = np.expand_dims(im,axis=2)
     img_shape = im.shape
