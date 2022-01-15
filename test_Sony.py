@@ -19,7 +19,9 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--file", default=None,
-    type=str, help="Test on a particular file")
+    type=str, help="Test on a particular file.")
+parser.add_argument("--generalization", default=False,
+    type=bool, help="Test on other images from another Bayer array frame.")
 args = parser.parse_args()
 
 parent_dir = 'pytorch-Learning-to-See-in-the-Dark/'
@@ -56,45 +58,52 @@ def process_file(tuple_, d: dict):
     print("File {}/{}".format(k, lenL))
     file_used = file_.split('/')[-1]
     print(file_used)
-    #gt_file =  + '_00_10s.ARW'
-    gt_path = glob.glob(gt_dir + file_used.split('_')[0] + "*")[0]
-    gt_file = gt_path.split('/')[-1]
-    in_exposure = file_used[9:-5] # float(in_fn[9:-5])
-    gt_exposure = gt_file[9:-5] # float(gt_fn[9:-5])
-    ratio = min(float(gt_exposure) / float(in_exposure), 300)
+    if not args.generalization:
+        gt_path = glob.glob(gt_dir + file_used.split('_')[0] + "*")[0]
+        gt_file = gt_path.split('/')[-1]
+        in_exposure = file_used[9:-5] # float(in_fn[9:-5])
+        gt_exposure = gt_file[9:-5] # float(gt_fn[9:-5])
+        ratio = min(float(gt_exposure) / float(in_exposure), 300)
+    else:
+        ratio = 300
 
     raw = rawpy.imread(file_)
     im = raw.raw_image_visible.astype(np.float32)
     input_full = np.expand_dims(pack_raw(im),axis=0) *ratio
 
-    im = raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
-    scale_full = np.expand_dims(np.float32(im/65535.0),axis = 0)
+    if not args.generalization:
+        im = raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
+        scale_full = np.expand_dims(np.float32(im/65535.0),axis = 0)
 
-    gt_raw = rawpy.imread(gt_path)
-    im = gt_raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
-    gt_full = np.expand_dims(np.float32(im/65535.0),axis = 0)
+        gt_raw = rawpy.imread(gt_path)
+        im = gt_raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
+        gt_full = np.expand_dims(np.float32(im/65535.0),axis = 0)
 
-    input_full = np.minimum(input_full,1.0)
+        gt_full = gt_full[0,:,:,:]
+        scale_full = scale_full[0,:,:,:]
+        origin_full = scale_full
 
+    input_full = np.minimum(input_full, 1.0)
     in_img = torch.from_numpy(input_full).permute(0,3,1,2).to(device)
+    if args.generalization:
+        in_img.resize_((1, 4, 1424, 2128))
+    print(in_img.size())
     out_img = model(in_img)
     output = out_img.permute(0, 2, 3, 1).cpu().data.numpy()
-
     output = np.minimum(np.maximum(output,0),1)
 
-    output = output[0,:,:,:]
-    gt_full = gt_full[0,:,:,:]
-    scale_full = scale_full[0,:,:,:]
-    origin_full = scale_full
+    output = output[0, :, :, :]
 
-    d['id'].append(k)
-    d['ground truth'].append(gt_file)
-    d['predicted image'].append(file_used + '_out.png')
-    d['ssim'].append(compute_ssim(gt_full*255, output*255))
+    if not args.generalization:
+        d['id'].append(k)
+        d['ground truth'].append(gt_file)
+        d['predicted image'].append(file_used + '_out.png')
+        d['ssim'].append(compute_ssim(gt_full*255, output*255))
 
-    Image.fromarray((origin_full*255).astype('uint8')).save(result_dir + file_used + '_ori.png')
+        Image.fromarray((origin_full*255).astype('uint8')).save(result_dir + file_used + '_ori.png')
+        Image.fromarray((gt_full*255).astype('uint8')).save(result_dir + file_used + '_gt.png')
     Image.fromarray((output*255).astype('uint8')).save(result_dir + file_used + '_out.png')
-    Image.fromarray((gt_full*255).astype('uint8')).save(result_dir + file_used + '_gt.png')
+    
 
 if __name__ == "__main__":
     device = torch.device('cuda')
