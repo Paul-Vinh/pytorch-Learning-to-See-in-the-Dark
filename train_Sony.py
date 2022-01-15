@@ -21,6 +21,7 @@ import pytorch_ssim
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--parent_dir', type=str, default='', help='Path to dataset')
 parser.add_argument('--gt_dir', type=str, default='', help='Path to gt')
+parser.add_argument('--models_dir', type=str, default='', help='Path to store the checkpoint models')
 parser.add_argument('--loss', type=str, default='L1', help='Training loss = "L1", "L2" or "ssim"')
 parser.add_argument('--epoch', type=int, default=10, help='Number of Epochs')
 parser.add_argument('--plot_loss', type=bool, default=False, help='Want to plot loss or not')
@@ -36,15 +37,13 @@ gt_dir = args.gt_dir
 input_dir = parent_dir + 'dataset/Sony/short/'
 #gt_dir = parent_dir + 'dataset/Sony/long/'
 result_dir = parent_dir + 'result_Sony/'
-model_dir = parent_dir + 'saved_model/'
+model_dir = args.models_dir
 
 if not os.path.isdir(result_dir):
   os.mkdir(result_dir)
 
 if not os.path.isdir(model_dir):
   os.mkdir(model_dir)
-
-
 
 device = torch.device('cuda')
 print(f"Device: {device}")
@@ -121,9 +120,8 @@ opt = optim.Adam(model.parameters(), lr = learning_rate)
 # Print Evolution of metrics
 train_loss = []
 val_loss = []
-size_epoch = len(train_ids)
 
-for epoch in range(max(1,lastepoch),num_epochs+1):
+for epoch in range(lastepoch,num_epochs+1):
     #if os.path.isdir("result/%04d"%epoch):
     #    continue
     cnt=0
@@ -220,7 +218,7 @@ for epoch in range(max(1,lastepoch),num_epochs+1):
         input_images['100'] = [None]*len(train_ids)
 
 if plot_loss:
-    plt.plot([i/size_epoch for i in range(len(train_loss))], train_loss)
+    plt.plot(range(len(train_loss)), train_loss)
     plt.xlabel('Epochs')
     plt.ylabel('Loss ' + type_loss)
     plt.savefig(model_dir+'Loss'+type_loss+'e%04d.png'%epoch)   
