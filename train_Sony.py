@@ -123,7 +123,7 @@ train_loss = []
 val_loss = []
 size_epoch = len(train_ids)
 
-for epoch in range(lastepoch,num_epochs+1):
+for epoch in range(max(1,lastepoch),num_epochs+1):
     #if os.path.isdir("result/%04d"%epoch):
     #    continue
     cnt=0
