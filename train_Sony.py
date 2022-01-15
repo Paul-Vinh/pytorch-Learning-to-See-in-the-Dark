@@ -121,6 +121,7 @@ opt = optim.Adam(model.parameters(), lr = learning_rate)
 # Print Evolution of metrics
 train_loss = []
 val_loss = []
+size_epoch = len(train_ids)
 
 for epoch in range(lastepoch,num_epochs+1):
     #if os.path.isdir("result/%04d"%epoch):
@@ -219,7 +220,7 @@ for epoch in range(lastepoch,num_epochs+1):
         input_images['100'] = [None]*len(train_ids)
 
 if plot_loss:
-    plt.plot(range(len(train_loss)), train_loss)
+    plt.plot([i/size_epoch for i in range(len(train_loss))], train_loss)
     plt.xlabel('Epochs')
     plt.ylabel('Loss ' + type_loss)
     plt.savefig(model_dir+'Loss'+type_loss+'e%04d.png'%epoch)   
