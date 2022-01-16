@@ -29,7 +29,7 @@ parent_dir = 'pytorch-Learning-to-See-in-the-Dark/'
 input_dir = 'dataset/Sony/short/'
 gt_dir = 'dataset/Sony/long/'
 m_path = parent_dir + 'saved_model/'
-m_name = 'checkpoint_sony_e4000.pth'
+# m_name = 'checkpoint_sony_e4000.pth'
 result_dir = parent_dir + 'test_result_Sony/'
 
 def pack_raw(raw):
@@ -61,7 +61,6 @@ def process_file(tuple_, d: dict):
     file_, k = tuple_
     print("File {}/{}".format(k, lenL))
     file_used = file_.split('/')[-1]
-    print(file_used)
     if not args.generalization:
         gt_path = glob.glob(gt_dir + file_used.split('_')[0] + "*")[0]
         gt_file = gt_path.split('/')[-1]
@@ -112,22 +111,28 @@ def process_file(tuple_, d: dict):
 if __name__ == "__main__":
     device = torch.device('cuda')
     model = SeeInDark()
-    model.load_state_dict(torch.load( m_path + m_name ,map_location={'cuda:1':'cuda:0'}))
-    model = model.to(device)
+    
+    m_names = glob.glob(m_path + ".pth")
+    
+    for m_name in m_names:
+        m_name = m_name.split('/')[-1]
+        print('{}'.format(m_name))
+        model.load_state_dict(torch.load(m_path + m_name, map_location={'cuda:1':'cuda:0'}))
+        model = model.to(device)
 
-    if not os.path.isdir(result_dir):
-        os.makedirs(result_dir)
+        if not os.path.isdir(result_dir):
+            os.makedirs(result_dir)
 
-    if not args.file:
-        # test on the whole dataset
-        L = glob.glob(input_dir + '*')
-    else:
-        L = [input_dir + args.file]
-    lenL = len(L)
+        if not args.file:
+            # evaluate on the whole test set
+            L = glob.glob(input_dir + '1*')
+        else:
+            L = [input_dir + args.file]
+        lenL = len(L)
 
-    d = {"id": [], "ground truth": [], "predicted image": [], "ssim": []}
-    for i in range(lenL):
-        process_file((L[i], i+1), d)
-        # dataframe with ssim accuracy from dict
-        df = pd.DataFrame.from_dict(d)
-        df.to_csv('test_results.csv')
+        d = {"id": [], "ground truth": [], "predicted image": [], "ssim": []}
+        for i in range(lenL):
+            process_file((L[i], i+1), d)
+            # dataframe with ssim accuracy from dict
+            df = pd.DataFrame.from_dict(d)
+            df.to_csv('test_results_{}.csv'.format(m_name))
