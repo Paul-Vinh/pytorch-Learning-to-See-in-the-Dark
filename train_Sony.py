@@ -25,6 +25,7 @@ parser.add_argument('--gt_dir', type=str, default='', help='Path to gt')
 parser.add_argument('--models_dir', type=str, default='', help='Path to store the checkpoint models')
 parser.add_argument('--loss', type=str, default='L1', help='Training loss = "L1", "L2" or "ssim"')
 parser.add_argument('--epoch', type=int, default=10, help='Number of Epochs')
+parser.add_argument('--save_freq', type=int, default=100, help='Save every save_freq')
 parser.add_argument('--plot_loss', type=bool, default=False, help='Want to plot loss or not')
 
 args = parser.parse_args()
@@ -34,6 +35,7 @@ num_epochs = args.epoch
 plot_loss = args.plot_loss
 parent_dir = args.parent_dir
 gt_dir = args.gt_dir
+save_freq =args.save_freq
 
 input_dir = parent_dir + 'dataset/Sony/short/'
 #gt_dir = parent_dir + 'dataset/Sony/long/'
