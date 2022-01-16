@@ -33,7 +33,7 @@ m_name = 'checkpoint_sony_e4000.pth'
 result_dir = parent_dir + 'test_result_Sony/'
 
 def pack_raw(raw):
-    #pack Bayer image to 4 channels
+    # pack Bayer image to 4 channels
     if args.generalization:
         black_level = 528
     else:
@@ -69,11 +69,11 @@ def process_file(tuple_, d: dict):
         gt_exposure = gt_file[9:-5] # float(gt_fn[9:-5])
         ratio = min(float(gt_exposure) / float(in_exposure), 300)
     else:
-        ratio = 300
+        ratio = 200
 
     raw = rawpy.imread(file_)
     im = raw.raw_image_visible.astype(np.float32)
-    input_full = np.expand_dims(pack_raw(im),axis=0) *ratio
+    input_full = np.expand_dims(pack_raw(im),axis=0) * ratio
 
     if not args.generalization:
         im = raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
@@ -88,13 +88,13 @@ def process_file(tuple_, d: dict):
         origin_full = scale_full
 
     input_full = np.minimum(input_full, 1.0)
-    in_img = torch.from_numpy(input_full).permute(0,3,1,2).to(device)
     if args.generalization:
-        in_img.resize_((1, 4, 1424, 2128))
-    print(in_img.size())
+        input_full = input_full[:, :1440, :1920, :]
+    in_img = torch.from_numpy(input_full).permute(0, 3, 1, 2).to(device)
+
     out_img = model(in_img)
     output = out_img.permute(0, 2, 3, 1).cpu().data.numpy()
-    output = np.minimum(np.maximum(output,0),1)
+    output = np.minimum(np.maximum(output, 0), 1)
 
     output = output[0, :, :, :]
 
