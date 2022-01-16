@@ -112,7 +112,7 @@ if __name__ == "__main__":
     device = torch.device('cuda')
     model = SeeInDark()
     
-    m_names = glob.glob(m_path + ".pth")
+    m_names = glob.glob(m_path + "*.pth")
     
     for m_name in m_names:
         m_name = m_name.split('/')[-1]
