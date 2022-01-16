@@ -224,7 +224,7 @@ for epoch in range(max(1,lastepoch),num_epochs+1):
         
         # temp = np.concatenate((gt_patch[0,:,:,:], output[0,:,:,:]),axis=1)
         # Image.fromarray((temp*255).astype('uint8')).save(epoch_result_dir + f'{train_id:05}_00_train_{ratio}.jpg')
-        torch.save(model.state_dict(), model_dir+'checkpoint_sony_e%04d.pth'%epoch)
+        torch.save(model.state_dict(), model_dir+'checkpoint_sony_'+type_loss+'e%04d.pth'%epoch)
 
     if epoch%test_freq == 0 or epoch == num_epochs:
         model.eval()
