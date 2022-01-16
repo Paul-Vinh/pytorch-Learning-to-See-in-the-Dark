@@ -124,7 +124,7 @@ opt = optim.Adam(model.parameters(), lr = learning_rate)
 train_loss = []
 val_loss = []
 
-for epoch in range(lastepoch,num_epochs+1):
+for epoch in range(max(1,lastepoch),num_epochs+1):
     #if os.path.isdir("result/%04d"%epoch):
     #    continue
     cnt=0
@@ -194,7 +194,6 @@ for epoch in range(lastepoch,num_epochs+1):
             loss = loss_l2(out_img, gt_img)
         elif type_loss == "ssim":
             loss = loss_ssim(out_img, gt_img)
-        print(loss)
         loss.backward()
 
         opt.step()
