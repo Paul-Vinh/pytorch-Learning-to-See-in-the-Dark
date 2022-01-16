@@ -26,6 +26,7 @@ parser.add_argument('--models_dir', type=str, default='', help='Path to store th
 parser.add_argument('--loss', type=str, default='L1', help='Training loss = "L1", "L2" or "ssim"')
 parser.add_argument('--epoch', type=int, default=10, help='Number of Epochs')
 parser.add_argument('--save_freq', type=int, default=100, help='Save every save_freq')
+parser.add_argument('--test_freq', type=int, default=100, help='Test every test_freq')
 parser.add_argument('--plot_loss', type=bool, default=False, help='Want to plot loss or not')
 
 args = parser.parse_args()
@@ -36,6 +37,7 @@ plot_loss = args.plot_loss
 parent_dir = args.parent_dir
 gt_dir = args.gt_dir
 save_freq =args.save_freq
+test_freq =args.test_freq
 
 input_dir = parent_dir + 'dataset/Sony/short/'
 #gt_dir = parent_dir + 'dataset/Sony/long/'
@@ -66,7 +68,7 @@ for i in range(len(test_fns)):
     test_ids.append(int(test_fn[0:5]))
 
 ps = 512 #patch size for training
-save_freq = 100
+#save_freq = 100
 
 DEBUG = 0
 if DEBUG == 1:
@@ -131,7 +133,8 @@ for epoch in range(max(1,lastepoch),num_epochs+1):
     if epoch > 2000:
         for g in opt.param_groups:
             g['lr'] = 1e-5
-  
+    
+    model.train()
 
     for ind in np.random.permutation(len(train_ids)):
         # get the path from image id
@@ -200,28 +203,103 @@ for epoch in range(max(1,lastepoch),num_epochs+1):
         g_loss[ind]=loss.data.cpu()
 
         mean_loss = np.mean(g_loss[np.where(g_loss)])
-        print(f"Epoch: {epoch} \t Count: {cnt} \t Loss={mean_loss:.3} \t Time={time.time()-st:.3}")
+        print(f"Training: Epoch: {epoch} \t Count: {cnt} \t Loss={mean_loss:.3} \t Time={time.time()-st:.3}")
         train_loss.append(mean_loss)
 
-        if epoch%save_freq==0 or epoch  == num_epochs:
-            epoch_result_dir = result_dir + f'{epoch:04}/'
 
-            if not os.path.isdir(epoch_result_dir):
-                os.makedirs(epoch_result_dir)
 
-            output = out_img.permute(0, 2, 3, 1).cpu().data.numpy()
-            output = np.minimum(np.maximum(output,0),1)
+    if epoch%save_freq==0 or epoch  == num_epochs:
+        # epoch_result_dir = result_dir + f'{epoch:04}/'
+
+        # if not os.path.isdir(epoch_result_dir):
+        #     os.makedirs(epoch_result_dir)
+
+        # output = out_img.permute(0, 2, 3, 1).cpu().data.numpy()
+        # output = np.minimum(np.maximum(output,0),1)
+        
+        # temp = np.concatenate((gt_patch[0,:,:,:], output[0,:,:,:]),axis=1)
+        # Image.fromarray((temp*255).astype('uint8')).save(epoch_result_dir + f'{train_id:05}_00_train_{ratio}.jpg')
+        torch.save(model.state_dict(), model_dir+'checkpoint_sony_e%04d.pth'%epoch)
+
+    if epoch%test_freq == 0 or epoch == num_epochs:
+        model.eval()
+        loss_value = 0
+        for ind in np.random.permutation(len(test_ids))[:5]:
+            # get the path from image id
+            test_id = test_ids[ind]
+            in_files = glob.glob(input_dir + '%05d_00*.ARW'%test_id)
+            in_path = in_files[np.random.randint(0,len(in_files))]
+            _, in_fn = os.path.split(in_path)
+
+            gt_files = glob.glob(gt_dir + '%05d_00*.ARW'%test_id)
+            gt_path = gt_files[0]
+            _, gt_fn = os.path.split(gt_path)
+            in_exposure =  float(in_fn[9:-5])
+            gt_exposure =  float(gt_fn[9:-5])
+            ratio = min(gt_exposure/in_exposure,300)
             
-            temp = np.concatenate((gt_patch[0,:,:,:], output[0,:,:,:]),axis=1)
-            Image.fromarray((temp*255).astype('uint8')).save(epoch_result_dir + f'{train_id:05}_00_train_{ratio}.jpg')
-            torch.save(model.state_dict(), model_dir+'checkpoint_sony_e%04d.pth'%epoch)
+            st=time.time()
+            cnt+=1
+
+            if input_images[str(ratio)[0:3]][ind] is None:
+                raw = rawpy.imread(in_path)
+                input_images[str(ratio)[0:3]][ind] = np.expand_dims(pack_raw(raw),axis=0) *ratio
+
+                gt_raw = rawpy.imread(gt_path)
+                im = gt_raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
+                gt_images[ind] = np.expand_dims(np.float32(im/65535.0),axis = 0)
+            
+            #crop
+            H = input_images[str(ratio)[0:3]][ind].shape[1]
+            W = input_images[str(ratio)[0:3]][ind].shape[2]
+
+            xx = np.random.randint(0,W-ps)
+            yy = np.random.randint(0,H-ps)
+            input_patch = input_images[str(ratio)[0:3]][ind][:,yy:yy+ps,xx:xx+ps,:]
+            gt_patch = gt_images[ind][:,yy*2:yy*2+ps*2,xx*2:xx*2+ps*2,:]
+        
+
+            if np.random.randint(2,size=1)[0] == 1:  # random flip 
+                input_patch = np.flip(input_patch, axis=1)
+                gt_patch = np.flip(gt_patch, axis=1)
+            if np.random.randint(2,size=1)[0] == 1: 
+                input_patch = np.flip(input_patch, axis=2)
+                gt_patch = np.flip(gt_patch, axis=2)
+            if np.random.randint(2,size=1)[0] == 1:  # random transpose 
+                input_patch = np.transpose(input_patch, (0,2,1,3))
+                gt_patch = np.transpose(gt_patch, (0,2,1,3))
+            
+            
+            input_patch = np.minimum(input_patch,1.0)
+            gt_patch = np.maximum(gt_patch, 0.0)
+            
+            in_img = torch.from_numpy(input_patch).permute(0,3,1,2).to(device)
+            gt_img = torch.from_numpy(gt_patch).permute(0,3,1,2).to(device)
+
+            out_img = model(in_img)
+            
+            if type_loss == "L1":
+                loss = loss_l1(out_img, gt_img)
+            elif type_loss == "L2":
+                loss = loss_l2(out_img, gt_img)
+            elif type_loss == "ssim":
+                loss = loss_ssim(out_img, gt_img)
+
+            g_loss[ind]=loss.data.cpu()
+
+            mean_loss = np.mean(g_loss[np.where(g_loss)])
+            print(f"Validation : Epoch: {epoch} \t Count: {cnt} \t Loss={mean_loss:.3} \t Time={time.time()-st:.3}")
+            loss_value += mean_loss
+        val_loss.apped(loss_value/5)
+
         input_images = {}
         input_images['300'] = [None]*len(train_ids)
         input_images['250'] = [None]*len(train_ids)
         input_images['100'] = [None]*len(train_ids)
 
 if plot_loss:
-    plt.plot(range(len(train_loss)), train_loss)
+    plt.plot([i/len(train_ids) for i in range(len(train_loss))], train_loss)
+    plt.plot(range(len(val_loss)), val_loss)
     plt.xlabel('Epochs')
     plt.ylabel('Loss ' + type_loss)
     plt.savefig(model_dir+'Loss'+type_loss+'e%04d.png'%epoch)   
