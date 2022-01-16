@@ -300,7 +300,7 @@ for epoch in range(max(1,lastepoch),num_epochs+1):
             mean_loss = np.mean(g_loss[np.where(g_loss)])
             print(f"Validation : Epoch: {epoch} \t Count: {cnt} \t Loss={mean_loss:.3} \t Time={time.time()-st:.3}")
             loss_value += mean_loss
-        val_loss.apped(loss_value/5)
+        val_loss.append(loss_value/5)
 
        
 if plot_loss:
