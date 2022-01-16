@@ -203,7 +203,7 @@ for epoch in range(max(1,lastepoch),num_epochs+1):
         print(f"Epoch: {epoch} \t Count: {cnt} \t Loss={mean_loss:.3} \t Time={time.time()-st:.3}")
         train_loss.append(mean_loss)
 
-        if epoch%save_freq==0:
+        if epoch%save_freq==0 or epoch  == num_epochs:
             epoch_result_dir = result_dir + f'{epoch:04}/'
 
             if not os.path.isdir(epoch_result_dir):
