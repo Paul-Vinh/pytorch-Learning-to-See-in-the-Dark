@@ -304,8 +304,9 @@ for epoch in range(max(1,lastepoch),num_epochs+1):
 
        
 if plot_loss:
-    plt.plot([i/len(train_ids) for i in range(len(train_loss))], train_loss)
-    plt.plot(range(len(val_loss)), val_loss)
+    plt.plot([i/len(train_ids) for i in range(len(train_loss))], train_loss, label = 'train loss')
+    plt.plot(range(1, len(val_loss) + 1), val_loss, label = "val loss")
     plt.xlabel('Epochs')
     plt.ylabel('Loss ' + type_loss)
+    plt.legend()
     plt.savefig(model_dir+'Loss'+type_loss+'e%04d.png'%epoch)   
