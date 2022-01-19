@@ -57,7 +57,7 @@ def compute_ssim(gt_im, pred_im):
     return(ssim(gt_im, pred_im,
                   data_range=pred_im.max() - pred_im.min(), multichannel=True))
 
-def process_file(tuple_, d: dict):
+def process_file(tuple_, d: dict, name_dir: str):
     file_, k = tuple_
     print("File {}/{}".format(k, lenL))
     file_used = file_.split('/')[-1]
@@ -103,9 +103,9 @@ def process_file(tuple_, d: dict):
         d['predicted image'].append(file_used + '_out.png')
         d['ssim'].append(compute_ssim(gt_full*255, output*255))
 
-        Image.fromarray((origin_full*255).astype('uint8')).save(result_dir + file_used + '_ori.png')
-        Image.fromarray((gt_full*255).astype('uint8')).save(result_dir + file_used + '_gt.png')
-    Image.fromarray((output*255).astype('uint8')).save(result_dir + file_used + '_out.png')
+        Image.fromarray((origin_full*255).astype('uint8')).save(name_dir + file_used + '_ori.png')
+        Image.fromarray((gt_full*255).astype('uint8')).save(name_dir + file_used + '_gt.png')
+    Image.fromarray((output*255).astype('uint8')).save(name_dir + file_used + '_out.png')
     
 
 if __name__ == "__main__":
@@ -116,6 +116,8 @@ if __name__ == "__main__":
     
     for m_name in m_names:
         m_name = m_name.split('/')[-1]
+        name_dir = m_name.split('.')[0] + '/'
+        os.makedirs(name_dir)
         print('{}'.format(m_name))
         model.load_state_dict(torch.load(m_path + m_name, map_location={'cuda:1':'cuda:0'}))
         model = model.to(device)
@@ -132,7 +134,7 @@ if __name__ == "__main__":
 
         d = {"id": [], "ground truth": [], "predicted image": [], "ssim": []}
         for i in range(lenL):
-            process_file((L[i], i+1), d)
+            process_file((L[i], i+1), d, name_dir)
             # dataframe with ssim accuracy from dict
             df = pd.DataFrame.from_dict(d)
             df.to_csv('test_results_{}.csv'.format(m_name))
