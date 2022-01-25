@@ -117,7 +117,7 @@ if __name__ == "__main__":
     for m_name in m_names:
         m_name = m_name.split('/')[-1]
         name_dir = m_name.split('.')[0] + '/'
-        os.makedirs(name_dir)
+        os.makedirs(name_dir, exist_ok=True)
         print('{}'.format(m_name))
         model.load_state_dict(torch.load(m_path + m_name, map_location={'cuda:1':'cuda:0'}))
         model = model.to(device)
