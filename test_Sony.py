@@ -122,8 +122,7 @@ if __name__ == "__main__":
         model.load_state_dict(torch.load(m_path + m_name, map_location={'cuda:1':'cuda:0'}))
         model = model.to(device)
 
-        if not os.path.isdir(result_dir):
-            os.makedirs(result_dir)
+        os.makedirs(result_dir, exist_ok=True)
 
         if not args.file:
             # evaluate on the whole test set
