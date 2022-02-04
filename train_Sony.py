@@ -116,7 +116,7 @@ def loss_l1(out_im, gt_im):
 def loss_l2(out_im, gt_im):
     """ Loss L2 d'entraînement.
     """
-    loss = nn.MSELoss() 
+    loss = nn.MSELoss()
     return loss(out_im, gt_im)
 
 def loss_ssim(out_im, gt_im):
@@ -135,7 +135,13 @@ for folder in allfolders:
 # hyperparamètres + modèle & optimiseur
 learning_rate = 1e-4
 model = SeeInDark().to(device)
-model._initialize_weights()
+if lastepoch == 0:
+    model._initialize_weights()
+else:
+    # reprendre l'entraînement à la dernière epoch
+    # charger le dernier checkpoint
+    model.load_state_dict(torch.load('checkpoint_sony_e{:04d}.pth'.format(lastepoch)))
+
 opt = optim.Adam(model.parameters(), lr = learning_rate)
 
 # évolution des métriques
