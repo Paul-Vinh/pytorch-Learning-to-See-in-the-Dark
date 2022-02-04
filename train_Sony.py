@@ -260,14 +260,23 @@ for epoch in range(max(1, lastepoch), num_epochs+1):
             cnt += 1
 
             raw = rawpy.imread(in_path)
-            input_image = np.expand_dims(pack_raw(raw, black_level),axis=0) *ratio
+            input_image = np.expand_dims(pack_raw(raw, black_level),axis=0) * ratio
 
             gt_raw = rawpy.imread(gt_path)
             im = gt_raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
             gt_image = np.expand_dims(np.float32(im/65535.0),axis = 0)
+
+            # cropping de l'image
+            H = input_image.shape[1]
+            W = input_image.shape[2]
+
+            xx = np.random.randint(0, W-ps)
+            yy = np.random.randint(0, H-ps)
+            input_patch = input_image[:, yy:yy+ps, xx:xx+ps,:]
+            gt_patch = gt_image[:,yy*2:yy*2+ps*2,xx*2:xx*2+ps*2,:]
             
-            in_img = torch.from_numpy(input_image).permute(0,3,1,2).to(device)
-            gt_img = torch.from_numpy(gt_image).permute(0,3,1,2).to(device)
+            in_img = torch.from_numpy(input_patch).permute(0,3,1,2).to(device)
+            gt_img = torch.from_numpy(gt_patch).permute(0,3,1,2).to(device)
 
             out_img = model(in_img)
             

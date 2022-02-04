@@ -23,7 +23,7 @@ parser.add_argument("--file", default=None,
 parser.add_argument("--generalization", default=False,
     type=bool, help="Tester sur d'autres images provenant d'une autre trame de Bayer.")
 parser.add_argument('--parent_dir',
-    type=str, default='', help='Chemin d'accès au dataset')
+    type=str, default='', help="Chemin d'accès au dataset")
 parser.add_argument('--black_level', type=int,
     default=512, help="Niveau de noir : 512 (Sony), 528 (Iphone XR)")
 args = parser.parse_args()
