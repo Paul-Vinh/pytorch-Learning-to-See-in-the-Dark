@@ -3,9 +3,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class SeeInDark(nn.Module):
+    """ U-Net used for the task "Learning-to-see-in-the-dark".
+    """
     def __init__(self, num_classes=10):
         super(SeeInDark, self).__init__()
         
+        # U-Net architecture :
         #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.conv1_1 = nn.Conv2d(4, 32, kernel_size=3, stride=1, padding=1)
         self.conv1_2 = nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1)
@@ -45,6 +48,8 @@ class SeeInDark(nn.Module):
         self.conv10_1 = nn.Conv2d(32, 12, kernel_size=1, stride=1)
     
     def forward(self, x):
+        """ Passe forward à travers le réseau.
+        """
         conv1 = self.lrelu(self.conv1_1(x))
         conv1 = self.lrelu(self.conv1_2(conv1))
         pool1 = self.pool1(conv1)
@@ -89,6 +94,8 @@ class SeeInDark(nn.Module):
         return out
 
     def _initialize_weights(self):
+        """ Initialisation des poids.
+        """
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 m.weight.data.normal_(0.0, 0.02)
@@ -98,5 +105,7 @@ class SeeInDark(nn.Module):
                 m.weight.data.normal_(0.0, 0.02)
 
     def lrelu(self, x):
-        outt = torch.max(0.2*x, x)
+        """ Fonction d'activation Leaky ReLU : f(x) = max(x, 0.2 * x). 
+        """
+        outt = torch.max(0.2 * x, x)
         return outt
