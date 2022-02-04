@@ -21,7 +21,7 @@ from torchgeometry.losses import ssim
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--parent_dir', type=str,
-    default='', help='Chemin d'accès au dataset')
+    default='', help="Chemin d'accès au dataset")
 parser.add_argument('--models_dir', type=str,
     default='', help='Chemin pour stocker les modèles .pth')
 parser.add_argument('--loss', type=str,
@@ -46,6 +46,7 @@ parent_dir = args.parent_dir
 
 save_freq = args.save_freq
 val_freq = args.val_freq
+black_level = args.black_level
 
 # chemin d'accès vers les images à débruiter (images courte-exposition)
 input_dir = parent_dir + 'dataset/Sony/short/'
@@ -172,7 +173,7 @@ for epoch in range(max(1, lastepoch), num_epochs+1):
         cnt += 1
 
         raw = rawpy.imread(in_path)
-        input_image = np.expand_dims(pack_raw(raw, args.black_level),axis=0) *ratio
+        input_image = np.expand_dims(pack_raw(raw, black_level),axis=0) *ratio
     
         gt_raw = rawpy.imread(gt_path)
         im = gt_raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
