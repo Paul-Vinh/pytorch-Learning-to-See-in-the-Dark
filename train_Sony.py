@@ -127,10 +127,12 @@ def loss_ssim(out_im, gt_im):
 
 g_loss = np.zeros((5000, 1))
 
-allfolders = glob.glob('./result/*0')
+allfolders = glob.glob(model_dir + '*.pth')
 lastepoch = 0
+
 for folder in allfolders:
-    lastepoch = np.maximum(lastepoch, int(folder[-4:]))
+    if type_loss in folder:
+        lastepoch = np.maximum(lastepoch, int(folder[-8:-4])) + 1
 
 # hyperparamètres + modèle & optimiseur
 learning_rate = 1e-4
@@ -140,7 +142,7 @@ if lastepoch == 0:
 else:
     # reprendre l'entraînement à la dernière epoch
     # charger le dernier checkpoint
-    model.load_state_dict(torch.load('checkpoint_sony_e{:04d}.pth'.format(lastepoch)))
+    model.load_state_dict(torch.load('checkpoint_sony_'+type_loss+'e{:04d}.pth'.format(lastepoch)))
 
 opt = optim.Adam(model.parameters(), lr = learning_rate)
 
@@ -149,7 +151,7 @@ train_loss = []
 val_loss = []
 
 # boucle sur le nombre d'epochs
-for epoch in range(max(1, lastepoch), num_epochs+1):
+for epoch in range(max(1, lastepoch), lastepoch+num_epochs+1):
     cnt = 0
     # si epoch > 2000 ==> le taux d'apprentissage est modifié
     if epoch > 2000:
