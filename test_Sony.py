@@ -22,25 +22,28 @@ parser.add_argument("--file", default=None,
     type=str, help="Tester la méthode sur un fichier particulier.")
 parser.add_argument("--generalization", default=False,
     type=bool, help="Tester sur d'autres images provenant d'une autre trame de Bayer.")
-parser.add_argument('--parent_dir',
+parser.add_argument('--dataset_dir',
     type=str, default='', help="Chemin d'accès au dataset")
+parser.add_argument('--model_dir',
+    type=str, default='', help="Chemin d'accès au(x) modèle(s)")
 parser.add_argument('--black_level', type=int,
     default=512, help="Niveau de noir : 512 (Sony), 528 (Iphone XR)")
 args = parser.parse_args()
 
-parent_dir = args.parent_dir
+dataset_dir = args.dataset_dir
+models_dir = args.model_dir
 black_level = args.black_level
 
 # chemin d'accès vers les images à débruiter (images courte-exposition)
-input_dir = parent_dir + 'dataset/Sony/short/'
+input_dir = dataset_dir + 'dataset/Sony/short/'
 # chemin d'accès vers les ground truth associées (images haute-exposition)
-gt_dir = parent_dir + 'dataset/Sony/long/'
+gt_dir = dataset_dir + 'dataset/Sony/long/'
 
 # chemin d'accès où sont stockés les modèles .pth
-m_path = parent_dir + 'saved_model/'
+m_path = models_dir + 'saved_model/'
 
 # chemin d'accès pour stocker les sorties du modèle (images)
-result_dir = parent_dir + 'test_result_Sony/'
+result_dir = dataset_dir + 'test_result_Sony/'
 
 def pack_raw(raw, black_level):
     # pack Bayer image vers 4 canaux
