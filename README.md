@@ -6,7 +6,7 @@ Chen Chen, Qifeng Chen, Jia Xu, and Vladlen Koltun, "Learning to See in the Dark
 [Tensorflow code](https://github.com/cchen156/Learning-to-See-in-the-Dark) <br/>
 [Paper](http://cchen156.web.engr.illinois.edu/paper/18CVPR_SID.pdf)
 
-### Github repository forked from https://github.com/lavi135246/pytorch-Learning-to-See-in-the-Dark
+### Dossier Github récupéré de https://github.com/lavi135246/pytorch-Learning-to-See-in-the-Dark
 Nous nous sommes fortement inspirés du code de ce dossier Github fourni en version Pytorch. Toutefois, nous avons apporté des changements dans l'implémentation afin de résoudre des problèmes liés à la mémoire RAM et de permettre la généralisation du modèle à l'utilisation d'images capturées à partir d'un appareil photo utilisant une trame de Bayer similaire à l'appareil photo Sony utilisé dans le papier original.
 
 ## Ressources nécessaires
