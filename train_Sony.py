@@ -5,19 +5,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import rawpy
 import glob
-import gc
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from PIL import Image
-
 from model import SeeInDark
 
 import argparse
 from pytorch_msssim import SSIM
-from torchgeometry.losses import ssim
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--parent_dir', type=str,
@@ -28,6 +24,8 @@ parser.add_argument('--loss', type=str,
     default='L1', help="Loss d'entraînement = 'L1', 'L2' or 'ssim'")
 parser.add_argument('--epoch', type=int,
     default=10, help="Nombre d'epochs")
+parser.add_argument('--saved_model',
+    type=str, default='', help="Chemin d'accès au(x) modèle(s)")
 parser.add_argument('--save_freq', type=int,
     default=100, help='Sauvegarder les poids tous les save_freq')
 parser.add_argument('--val_freq', type=int,
@@ -47,6 +45,8 @@ parent_dir = args.parent_dir
 save_freq = args.save_freq
 val_freq = args.val_freq
 black_level = args.black_level
+
+saved_models = args.saved_model
 
 # chemin d'accès vers les images à débruiter (images courte-exposition)
 input_dir = parent_dir + 'dataset/Sony/short/'
@@ -127,12 +127,16 @@ def loss_ssim(out_im, gt_im):
 
 g_loss = np.zeros((5000, 1))
 
-allfolders = glob.glob(model_dir + '*.pth')
 lastepoch = 0
 
-for folder in allfolders:
-    if type_loss in folder:
-        lastepoch = np.maximum(lastepoch, int(folder[-8:-4])) + 1
+# chemin d'accès où sont stockés les modèles .pth
+m_path = saved_models + 'saved_model/'
+allfiles = glob.glob(m_path + '*.pth')
+
+for file_ in allfiles:
+    file_ = file_.split('/')[-1]
+    if type_loss in file_:
+        lastepoch = max(lastepoch, int(file_[-8:-4]))
 
 # hyperparamètres + modèle & optimiseur
 learning_rate = 1e-4
@@ -142,8 +146,9 @@ if lastepoch == 0:
 else:
     # reprendre l'entraînement à la dernière epoch
     # charger le dernier checkpoint
-    model.load_state_dict(torch.load('checkpoint_sony_'+type_loss+'e{:04d}.pth'.format(lastepoch)))
+    model.load_state_dict(torch.load(m_path+'checkpoint_sony_'+type_loss+'e{:04d}.pth'.format(lastepoch)))
 
+lastepoch += 1
 opt = optim.Adam(model.parameters(), lr = learning_rate)
 
 # évolution des métriques
